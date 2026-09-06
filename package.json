@@ -1,0 +1,38 @@
+{
+  "name": "stablecoin-gateway",
+  "private": true,
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "node scripts/dev.mjs",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "evaluate": "turbo run build --filter=@gateway/evaluation && node apps/evaluation/dist/index.js",
+    "evaluate:failures": "node scripts/failure-evaluation.mjs",
+    "migrate": "turbo run build --filter=@gateway/db && pnpm --filter @gateway/db migrate",
+    "infra:up": "brew services start postgresql@16 && brew services start redis",
+    "infra:down": "brew services stop postgresql@16 && brew services stop redis",
+    "db:setup": "bash scripts/setup-local-db.sh",
+    "infra:docker:up": "docker compose up -d --build",
+    "infra:docker:down": "docker compose down",
+    "setup": "pnpm db:setup && pnpm migrate"
+  },
+  "devDependencies": {
+    "turbo": "2.10.12",
+    "typescript": "5.6.3",
+    "tsx": "4.19.1",
+    "vitest": "2.1.3",
+    "@types/node": "22.7.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "body-parser": "1.20.6",
+      "path-to-regexp": "0.1.13",
+      "qs": "6.16.0"
+    }
+  }
+}

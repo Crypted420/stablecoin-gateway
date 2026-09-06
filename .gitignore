@@ -1,0 +1,11 @@
+node_modules
+dist
+.turbo
+.dev-server.lock
+.env
+*.log
+coverage
+evaluation-results
+contracts/artifacts
+contracts/cache
+contracts/.cache

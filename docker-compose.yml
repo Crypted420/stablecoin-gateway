@@ -1,0 +1,180 @@
+name: stablecoin-gateway
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+      POSTGRES_DB: gateway
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway -d gateway"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      target: app
+    command: ["node", "packages/db/dist/migrate.js"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gateway:gateway@postgres:5432/gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  worker:
+    build:
+      context: .
+      target: app
+    command: ["node", "apps/worker/dist/index.js"]
+    init: true
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gateway:gateway@postgres:5432/gateway
+      REDIS_URL: redis://redis:6379
+      WORKER_CONTROL_HOST: 0.0.0.0
+      WORKER_CONTROL_PORT: 4100
+    expose:
+      - "4100"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4100/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 5s
+      timeout: 4s
+      retries: 24
+      start_period: 20s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      target: app
+    command: ["node", "apps/api/dist/index.js"]
+    init: true
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gateway:gateway@postgres:5432/gateway
+      REDIS_URL: redis://redis:6379
+      API_PORT: 4000
+      CORS_ORIGIN: http://localhost:5173
+      WORKER_CONTROL_URL: http://worker:4100
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/api/system/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  # Optional: `docker compose --profile observability up -d`
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    profiles: ["observability"]
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      api:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-gateway-demo}
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+  # This service never broadcasts unless EVAL_LIVE=true in .env.
+  evaluation:
+    build:
+      context: .
+      target: app
+    profiles: ["evaluation"]
+    command: ["node", "apps/evaluation/dist/index.js"]
+    env_file:
+      - .env
+    environment:
+      EVAL_API_URL: http://api:4000
+    volumes:
+      - ./evaluation-results:/app/evaluation-results
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres-data:
+  redis-data:
+  grafana-data:
