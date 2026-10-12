@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../api";
 import { useMerchantPath } from "../merchant-context";
 import { Banner, StatusPill, naira, shortHash, when } from "../components/ui";
+import { DepositAddress } from "../components/DepositAddress";
 import type { Invoice, Payment, Settlement } from "../types";
 
 interface Detail {
@@ -45,17 +46,7 @@ export function InvoiceDetail() {
       </p>
       {error ? <Banner tone="error">{error}</Banner> : null}
 
-      <div className="card">
-        <h2>Deposit address</h2>
-        <div className="address">{invoice.depositAddress}</div>
-        <p className="hint" style={{ marginTop: 10, color: "var(--muted)", fontSize: 13 }}>
-          Unique to this invoice, so an incoming transfer needs no reference to be attributed.
-        </p>
-        <p className="hint" style={{ marginTop: 6, color: "var(--muted)", fontSize: 13 }}>
-          Send exactly {invoice.amountExpected} {invoice.tokenSymbol} on {invoice.network} to this
-          address. Detection is automatic.
-        </p>
-      </div>
+      <DepositAddress key={invoice.id} invoice={invoice} />
 
       <div className="card">
         <h2>Progress</h2>
