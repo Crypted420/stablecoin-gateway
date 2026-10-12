@@ -43,6 +43,7 @@ COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/
 COPY --from=build --chown=node:node /app/apps/worker/node_modules ./apps/worker/node_modules
 COPY --from=build --chown=node:node /app/apps/worker/dist ./apps/worker/dist
 COPY --from=build --chown=node:node /app/packages ./packages
+COPY --from=build --chown=node:node /app/scripts/start-server.mjs ./scripts/start-server.mjs
 
 USER node
 CMD ["node", "apps/api/dist/index.js"]

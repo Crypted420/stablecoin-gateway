@@ -1,0 +1,41 @@
+app = "stablecoin-gateway-api-crumbs"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = "25s"
+
+[build]
+  dockerfile = "Dockerfile"
+  build_target = "app"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "4000"
+  EVENT_BROKER = "postgres"
+  CHAIN_DETECTION_MODE = "alchemy"
+  ENFORCE_HTTPS = "true"
+  CORS_ORIGIN = "https://stablecoin-gateway.vercel.app"
+
+[processes]
+  app = "node scripts/start-server.mjs"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/system/health"
+    [http_service.checks.headers]
+      X-Forwarded-Proto = "https"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"
