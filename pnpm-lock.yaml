@@ -182,6 +182,9 @@ importers:
       '@gateway/core':
         specifier: workspace:*
         version: link:../core
+      '@gateway/db':
+        specifier: workspace:*
+        version: link:../db
       ioredis:
         specifier: 5.4.1
         version: 5.4.1

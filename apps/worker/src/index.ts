@@ -1,5 +1,5 @@
 import express from "express";
-import { Consumer, RedisBroker, type Broker } from "@gateway/broker";
+import { Consumer, PostgresBroker, RedisBroker, type Broker } from "@gateway/broker";
 import { LiveChainSource, type ChainSource } from "@gateway/chain";
 import {
   EVENT_NAMES,
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   assertChainDetectionConfigured();
   await migrate();
 
-  const broker: Broker = new RedisBroker();
+  const broker: Broker = config().EVENT_BROKER === "postgres" ? new PostgresBroker() : new RedisBroker();
   const source = chainSource();
   const payout = createPayoutProvider();
   const listener = new ListenerService(source, createChainAddressRegistrar());
@@ -150,7 +150,7 @@ async function main(): Promise<void> {
         outbox.pendingCount(),
         broker.pendingCount("confirmation")
       ]);
-      res.json({ status: "ok", database: "up", redis: "up", pendingOutbox, pendingConfirmation });
+      res.json({ status: "ok", database: "up", broker: config().EVENT_BROKER, ...(config().EVENT_BROKER === "redis" ? { redis: "up" } : {}), pendingOutbox, pendingConfirmation });
     } catch (error) {
       res.status(503).json({ status: "degraded", error: String(error) });
     }

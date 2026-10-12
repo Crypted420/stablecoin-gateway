@@ -1,0 +1,45 @@
+# Free demo deployment. PostgreSQL is supplied separately by Neon Free.
+services:
+  - type: web
+    name: stablecoin-gateway-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=@gateway/api --filter=@gateway/worker
+    startCommand: node scripts/start-render.mjs
+    healthCheckPath: /api/system/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: ENFORCE_HTTPS
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://stablecoin-gateway.vercel.app
+      - key: DATABASE_URL
+        sync: false
+      - key: EVENT_BROKER
+        value: postgres
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: WALLET_MNEMONIC
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: POLYGON_RPC_URL
+        sync: false
+      - key: BSC_RPC_URL
+        sync: false
+      - key: CHAIN_DETECTION_MODE
+        value: alchemy
+      - key: ALCHEMY_NOTIFY_AUTH_TOKEN
+        sync: false
+      - key: ALCHEMY_POLYGON_WEBHOOK_ID
+        sync: false
+      - key: ALCHEMY_BSC_WEBHOOK_ID
+        sync: false
+      - key: ALCHEMY_POLYGON_SIGNING_KEY
+        sync: false
+      - key: ALCHEMY_BSC_SIGNING_KEY
+        sync: false

@@ -10,3 +10,4 @@ coverage
 .git
 .gitignore
 evaluation-results
+.vercel

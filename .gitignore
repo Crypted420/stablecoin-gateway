@@ -3,9 +3,12 @@ dist
 .turbo
 .dev-server.lock
 .env
+.env.*
+!.env.example
 *.log
 coverage
 evaluation-results
 contracts/artifacts
 contracts/cache
 contracts/.cache
+.vercel

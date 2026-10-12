@@ -5,6 +5,7 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().default("postgres://gateway:gateway@localhost:5432/gateway"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
+  EVENT_BROKER: z.enum(["redis", "postgres"]).default("redis"),
   API_PORT: z.coerce.number().default(4000),
   ADMIN_API_KEY: z.string().default(""),
   ENFORCE_HTTPS: z.enum(["true", "false"]).default("false"),
