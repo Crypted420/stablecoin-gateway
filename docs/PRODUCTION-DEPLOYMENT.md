@@ -1,6 +1,6 @@
 # Render Free, Neon Free and Vercel
 
-The frontend is https://stablecoin-gateway.vercel.app. The backend runs the API
+The frontend is https://stablecoin-gateway.vercel.app. The backend at https://stablecoin-gateway-api.onrender.com runs the API
 and worker together on one Render Free web service in Oregon. Neon Free hosts
 PostgreSQL 18 in AWS us-west-2. Both event payloads and per-consumer delivery,
 retry and dead-letter state live in PostgreSQL (`EVENT_BROKER=postgres`), so
@@ -24,7 +24,7 @@ when redeploying. Deployment does not switch Paystack to live mode.
 Configure Vercel's API proxy with the actual Render HTTPS origin:
 
 ```sh
-node scripts/configure-vercel-api.mjs https://YOUR-SERVICE.onrender.com
+node scripts/configure-vercel-api.mjs https://stablecoin-gateway-api.onrender.com
 vercel deploy --prod
 ```
 

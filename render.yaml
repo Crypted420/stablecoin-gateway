@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=@gateway/api --filter=@gateway/worker
+    buildCommand: corepack enable && corepack prepare pnpm@9.12.3 --activate && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@gateway/api --filter=@gateway/worker
     startCommand: node scripts/start-render.mjs
     healthCheckPath: /api/system/health
     envVars:
