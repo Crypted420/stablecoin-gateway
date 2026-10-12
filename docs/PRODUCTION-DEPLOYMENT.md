@@ -18,9 +18,10 @@ required at the edge and in the API. Health checks explicitly forward the
 HTTPS protocol and require both the database and worker to be healthy.
 
 Keep the existing Neon URL, wallet mnemonic, admin key, RPC URLs, Alchemy IDs
-and signing keys, treasury configuration and Paystack test key in Fly secrets.
+and signing keys, treasury configuration and the current Paystack live key in Fly secrets.
 Never include credentials in the Docker build context or Git. Preserve wallet
-configuration on every redeploy. Deployment does not switch Paystack to live.
+configuration on every redeploy. Preserve the deployed Paystack key; local test
+credentials must not overwrite the live secret.
 
 Deploy exactly one Machine; Fly otherwise creates a spare by default:
 
@@ -71,8 +72,15 @@ are retained locally outside the repository.
 
 ## Costs, quotas and recovery
 
-The Fly Machine stays running with autostop disabled so background work can
-continue between requests. List-price compute for this size in Ashburn is
+The Fly Machine automatically stops after several minutes of idle HTTP traffic
+and starts again for incoming API or Alchemy webhook requests. `fly.toml` sets
+`auto_stop_machines = "stop"`, `auto_start_machines = true` and
+`min_machines_running = 0`. The API and worker share this Machine, so background
+confirmation checks, queued retries and settlement processing pause while it is
+stopped and resume after it wakes. The first request may take longer during
+startup. Continuous frontend polling or other HTTP traffic can keep it running.
+
+List-price compute for this size in Ashburn is
 $3.69 per 30 days of continuous runtime, plus traffic and any other metered
 resources. The database remains on Neon Free; no managed Fly Postgres exists.
 Do not add extra Machines, volumes or dedicated IPv4 addresses without reviewing
@@ -80,8 +88,9 @@ costs.
 
 Neon Free allows 100 CU-hours per project per month. The fixed 0.25 CU database
 therefore has about 400 active hours per month. The worker polls continuously
-and health checks query the database, so the compute can remain active even
-without customers. This free quota does not cover a full month of uninterrupted
+and health checks query the database while the Fly Machine runs, so the database
+can remain active during that time. Idle auto-stop allows it to become inactive
+between requests. This free quota does not cover a full month of uninterrupted
 database operation; service can pause when the quota is exhausted. Review Neon
 usage before depending on uninterrupted payment processing. No paid Neon upgrade
 is part of this deployment.
